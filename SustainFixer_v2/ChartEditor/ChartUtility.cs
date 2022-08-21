@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Console = SustainFixer.Debug;
 
-namespace SustainFixer.Chart // TODO: decide how much of this we're using/keeping...
+namespace SustainFixer.Chart
 {
     /// <summary>
     /// Class containing useful methods for manipulating and extracting information from a chart.
@@ -17,7 +18,7 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
         /// <param name="i"></param>
         /// <param name="interval"></param>
         /// <returns></returns>
-        public static long RoundToNearest(this long i, int interval)
+        public static long RoundToNearest(this long i, long interval)
         {
             return (long)Math.Round((float)i / interval) * interval;
         }
@@ -28,7 +29,7 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
         /// <param name="note"></param>
         /// <param name="precisionInterval">Recommended 4 to snap to nearest 1/192.</param>
         /// <returns></returns>
-        public static void RoundNoteToNearest(this Note note, int interval)
+        public static void RoundNoteToNearest(this Note note, long interval)
         {
             if (note.Time % interval != 0)
             {
@@ -41,7 +42,12 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
             }
         }
 
-        public static void ShortenNote(this Note note, long shortenAmt) // TEMP VAR (?) //
+        /// <summary>
+        /// Shortens the length of a sustained note.
+        /// </summary>
+        /// <param name="note"></param>
+        /// <param name="shortenAmt">Amount to shorten by.</param>
+        public static void ShortenNote(this Note note, long shortenAmt)
         {
             if (note.Length >= shortenAmt)
             {
@@ -58,11 +64,26 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
         {
             string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
-            int position = int.Parse(substrings[0]);
-            Note.Fret fret = (Note.Fret)Enum.ToObject(typeof(Note.Fret), int.Parse(substrings[3]));
-            int length = int.Parse(substrings[4]);
+            long time = long.Parse(substrings[0]);
+            short fret = short.Parse(substrings[3]);
+            long length = long.Parse(substrings[4]);
 
-            return new Note(position, fret, length);
+            return new Note(time, fret, length);
+        }
+
+        /// <summary>
+        /// Converts a standard .chart line into a Tempo object.
+        /// </summary>
+        /// <param name="line"></param>
+        /// <returns></returns>
+        public static Tempo ToTempo(this string line)
+        {
+            string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+
+            long time = long.Parse(substrings[0]);
+            float bpm = float.Parse(substrings[3]) / 1000f;
+
+            return new Tempo(time, bpm);
         }
 
         /// <summary>
@@ -72,20 +93,36 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
         /// <returns></returns>
         public static string ToLine(this Note note)
         {
-            return $"{note.Time} = N {(int)note.fret} {note.Length}";
+            return $"{note.Time} = N {note.Fret} {note.Length}";
         }
 
-        public static string ToString(this Section section)
+        /// <summary>
+        /// Converts a Tempo object to a standard .chart line, as a string.
+        /// </summary>
+        /// <param name="tempo"></param>
+        /// <returns></returns>
+        public static string ToLine(this Tempo tempo)
         {
-            StringBuilder sb = new StringBuilder();
+            return $"{tempo.Time} = B {tempo.BeatsPerMinute * 1000}";
+        }
+
+        /// <summary>
+        /// Converts a section into a string for .chart files.
+        /// </summary>
+        /// <param name="section"></param>
+        /// <returns></returns>
+        public static string SectionToString(this Section section)
+        {
+            StringBuilder sb = new StringBuilder(string.Empty);
 
             foreach (Note note in section.notes)
             {
-                sb.AppendLine(note.ToLine());
+                sb = sb.AppendLine($"  {note.ToLine()}");
             }
 
             return sb.ToString();
         }
+
 
         /// <summary>
         /// Returns true if the line passed in is written in the correct note line format.
@@ -97,14 +134,36 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
             string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
             return
-                int.TryParse(substrings[0], out int x) &&
+                long.TryParse(substrings[0], out long x) &&
                 substrings[2] == "N" &&
-                int.TryParse(substrings[3], out int y) &&
+                short.TryParse(substrings[3], out short y) &&
                 (y == 0 || y == 1 || y == 2 || y == 3 || y == 4 || y == 7) &&
-                int.TryParse(substrings[4], out int z);
+                long.TryParse(substrings[4], out long z);
         }
 
-        public static bool ContainsElementWithinRange(this List<long> notePositions, long noteEndTime, long range) // TEMP VAR (?) //
+        /// <summary>
+        /// Returns true if the line passed in is written in the correct tempo line format.
+        /// </summary>
+        /// <param name="line"></param>
+        /// <returns></returns>
+        public static bool IsTempoEvent(this string line) //Example note event format: 5000 = B 120
+        {
+            string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+
+            return
+                long.TryParse(substrings[0], out long x) &&
+                substrings[2] == "B" &&
+                long.TryParse(substrings[3], out long y);
+        }
+
+        /// <summary>
+        /// Check if a list of integers contains any element within a given range of a given value.
+        /// </summary>
+        /// <param name="notePositions"></param>
+        /// <param name="noteEndTime"></param>
+        /// <param name="range"></param>
+        /// <returns></returns>
+        public static bool ContainsElementWithinRange(this List<long> notePositions, long noteEndTime, long range)
         {
             foreach (var notePosition in notePositions)
             {
@@ -131,6 +190,11 @@ namespace SustainFixer.Chart // TODO: decide how much of this we're using/keepin
             }
 
             return notePositions;
+        }
+
+        public static Tempo GetTempoAtTime(this List<Tempo> tempoMap, long time)
+        {
+            return tempoMap.Last(x => x.Time < time);
         }
     }
 }

@@ -33,9 +33,19 @@ namespace Melanchall.DryWetMidi.Interaction
         public static readonly MusicalTimeSpan Eighth = new MusicalTimeSpan(EighthFraction);
 
         /// <summary>
+        /// <see cref="MusicalTimeSpan"/> that corresponds to the twelfth length.
+        /// </summary>
+        public static readonly MusicalTimeSpan Twelfth = new MusicalTimeSpan(TwelfthFraction);
+
+        /// <summary>
         /// <see cref="MusicalTimeSpan"/> that corresponds to the sixteenth length.
         /// </summary>
         public static readonly MusicalTimeSpan Sixteenth = new MusicalTimeSpan(SixteenthFraction);
+
+        /// <summary>
+        /// <see cref="MusicalTimeSpan"/> that corresponds to the twenty-fourth length.
+        /// </summary>
+        public static readonly MusicalTimeSpan TwentyFourth = new MusicalTimeSpan(TwentyFourthFraction);
 
         /// <summary>
         /// <see cref="MusicalTimeSpan"/> that corresponds to the thirty-second length.
@@ -43,9 +53,29 @@ namespace Melanchall.DryWetMidi.Interaction
         public static readonly MusicalTimeSpan ThirtySecond = new MusicalTimeSpan(ThirtySecondFraction);
 
         /// <summary>
+        /// <see cref="MusicalTimeSpan"/> that corresponds to the sixteenth length.
+        /// </summary>
+        public static readonly MusicalTimeSpan FourtyEighth = new MusicalTimeSpan(FourtyEighthFraction);
+
+        /// <summary>
         /// <see cref="MusicalTimeSpan"/> that corresponds to the sixty-fourth length.
         /// </summary>
         public static readonly MusicalTimeSpan SixtyFourth = new MusicalTimeSpan(SixtyFourthFraction);
+
+        /// <summary>
+        /// <see cref="MusicalTimeSpan"/> that corresponds to the ninety-sixth length.
+        /// </summary>
+        public static readonly MusicalTimeSpan NinetySixth = new MusicalTimeSpan(NinetySixthFraction);
+
+        /// <summary>
+        /// <see cref="MusicalTimeSpan"/> that corresponds to the one-twenty-eighth length.
+        /// </summary>
+        public static readonly MusicalTimeSpan OneTwentyEighth = new MusicalTimeSpan(OneTwentyEighthFraction);
+
+        /// <summary>
+        /// <see cref="MusicalTimeSpan"/> that corresponds to the sixteenth length.
+        /// </summary>
+        public static readonly MusicalTimeSpan OneNinetySecond = new MusicalTimeSpan(OneNinetySecondFraction);
 
         private const long ZeroTimeSpanNumerator = 0;
         private const long ZeroTimeSpanDenominator = 1;
@@ -56,9 +86,15 @@ namespace Melanchall.DryWetMidi.Interaction
         private const int HalfFraction = 2;
         private const int QuarterFraction = 4;
         private const int EighthFraction = 8;
+        private const int TwelfthFraction = 12;
         private const int SixteenthFraction = 16;
+        private const int TwentyFourthFraction = 24;
         private const int ThirtySecondFraction = 32;
+        private const int FourtyEighthFraction = 48;
         private const int SixtyFourthFraction = 64;
+        private const int NinetySixthFraction = 96;
+        private const int OneTwentyEighthFraction = 128;
+        private const int OneNinetySecondFraction = 192;
 
         private const int TripletNotesCount = 3;
         private const int TripletSpaceSize = 2;

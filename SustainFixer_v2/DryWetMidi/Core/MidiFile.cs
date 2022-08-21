@@ -369,7 +369,7 @@ namespace Melanchall.DryWetMidi.Core
             if (settings.ReaderSettings == null)
                 settings.ReaderSettings = new ReaderSettings();
 
-            var file = new MidiFile();
+            MidiFile file = new MidiFile();
 
             int? expectedTrackChunksCount = null;
             int actualTrackChunksCount = 0;

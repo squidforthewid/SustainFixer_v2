@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Melanchall.DryWetMidi.Interaction;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,28 +12,23 @@ namespace SustainFixer.Chart
     {
         public static void ProcessChartFile(string path)
         {
-            Console.WriteLine($"Processing {path}...", ConsoleColor.Green);
-
             // cache chart file
             ChartFile chart = ChartFile.Read(path);
-            int ticksPer192ndNote = 0; // TEMP VAL/VAR //
 
-            List<Section> sections = chart.sections;
-
-            for (int i = 0; i < sections.Count(); i++)
+            for (int i = 0; i < chart.sections.Count; i++)
             {
-                ProcessSection(sections[i], ticksPer192ndNote);
+                ProcessSection(chart.sections[i], chart);
             }
 
             chart.Write(path);
         }
 
 
-        private static void ProcessSection(Section section, int ticksPer192ndNote)
+        private static void ProcessSection(Section section, ChartFile chart)
         {
             try
             {
-                Console.WriteLine($"Processing Track: {section.sectionName}");
+                //Console.WriteLine($"Processing Section: {section.sectionName}");
             }
             catch
             {
@@ -43,64 +39,42 @@ namespace SustainFixer.Chart
             }
             finally
             {
-                if (section.sectionName.ToLower() != "") // TEMP VAL //
+                if (section.sectionName.ToLower() != "song" &&
+                    section.sectionName.ToLower() != "synctrack" &&
+                    section.sectionName.ToLower() != "events")
                 {
-                    section.ProcessNotes(note => note.RoundNoteToNearest(ticksPer192ndNote));
+                    int x = section.ProcessNotes(note => note.RoundNoteToNearest(chart.OneNinetySecond));
 
                     // cache note positions
                     List<long> notePositions = section.notes.GetNotePositions();
 
-                    // shorten note  by 1/32 note
+                    // shorten note based on BPM
                     section.ProcessNotes(note =>
                     {
                         if (note.Length > 1
-                        && notePositions.ContainsElementWithinRange(note.EndTime, 3)) // TEMP VAL //
+                        && notePositions.ContainsElementWithinRange(note.EndTime, chart.OneNinetySecond))
                         {
-                            note.ShortenNote(3); // TEMP VAL //
+                            long shortenAmt;
+
+                            if (chart.consistentBPM != null)
+                            {
+                                shortenAmt = (chart.consistentBPM >= 140) ? chart.Sixteenth :
+                                    (chart.consistentBPM >= 100) ? chart.TwentyFourth :
+                                    chart.ThirtySecond;
+                            }
+                            else
+                            {
+                                Tempo tempo = chart.tempoMap.GetTempoAtTime(note.Time);
+
+                                shortenAmt = (tempo.BeatsPerMinute >= 140) ? chart.Sixteenth :
+                                    (tempo.BeatsPerMinute >= 100) ? chart.TwentyFourth :
+                                    chart.ThirtySecond;
+                            }
+
+                            note.ShortenNote(shortenAmt);
                         }
                     });
                 }
-            }
-        }
-
-
-
-
-
-        // TODO - get rid of this eventually
-        static void RewriteChartFile(string path)
-        {
-            Console.WriteLine("Found .chart file", ConsoleColor.Red);
-            string fullText = File.ReadAllText(path);
-
-            ChartData cd = new ChartData(path);
-
-            if (cd != null)
-            {
-                List<string> originalNoteLines = new List<string>();
-                foreach (Note note in cd.notesInChartCache)
-                {
-                    originalNoteLines.Add(note.ToLine());
-                }
-
-                Note[] newNotes = cd.notesInChartCache; //create copy of notes in chart
-                List<long> newNotePositions = newNotes.GetNotePositions(); //cache the positions of these notes in a list
-
-                for (int i = 0; i < newNotes.Length; i++) //for each note in the newNotes array...
-                {
-                    if (newNotes[i].IsSustained && //if the note is sustained...
-                        newNotePositions.Contains(newNotes[i].position + newNotes[i].sustain))
-                    //...and another note exists at the position where its sustain ends...
-                    {
-                        newNotes[i].sustain -= Note.thirtySecond; //...shorten its sustain by 1/32 beat...
-
-                        //...and replace ORIGINAL note string in the .chart file with the NEW note, converted to a string
-                        fullText = fullText.Replace(originalNoteLines[i], newNotes[i].ToLine());
-                    }
-                }
-
-                //overwrite the file with the new text
-                File.WriteAllText(path, fullText);
             }
         }
     }

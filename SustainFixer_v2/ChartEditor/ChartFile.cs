@@ -2,21 +2,46 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
+using Console = SustainFixer.Debug;
 
 namespace SustainFixer.Chart
 {
     internal class ChartFile
     {
-        public int resolution = 0;
+        public int resolution = 480;
         public List<Section> sections = new();
+        public List<Tempo> tempoMap = new();
+        public float? consistentBPM = 120f;
 
-        public string fullText;
+        public long Whole => resolution * 4;
+        public long Half => resolution * 2;
+        public long Quarter => resolution;
+        public long Eighth => resolution / 2;
+        public long Twelfth => resolution / 3;
+        public long Sixteenth => resolution / 4;
+        public long TwentyFourth => resolution / 6;
+        public long ThirtySecond => resolution / 8;
+        public long FourtyEighth => resolution / 12;
+        public long SixtyFourth => resolution / 16;
+        public long NinetySixth => resolution / 24;
+        public long OneTwentyEighth => resolution / 32;
+        public long OneNinetySecond => resolution / 48;
 
-        public ChartFile(string fullText, List<Section> sections) // INCOMPLETE
+        string fullText = string.Empty;
+
+        public ChartFile() { }
+
+        public ChartFile(string fullText, int resolution, List<Section> sections, List<Tempo> tempoMap)
         {
             this.fullText = fullText;
-            this.sections = sections;
+            this.resolution = resolution;
+            this.sections = sections.ConvertAll(section => new Section(section.sectionName, section.notes));
+            this.tempoMap = tempoMap;
+            consistentBPM = tempoMap.Max(x => x.BeatsPerMinute) - tempoMap.Min(x => x.BeatsPerMinute) < 20 ?
+                tempoMap.Average(x => x.BeatsPerMinute) : null;
         }
 
         /// <summary>
@@ -27,10 +52,12 @@ namespace SustainFixer.Chart
         public static ChartFile Read(string path)
         {
             string fullText = File.ReadAllText(path);
-            List<Section> sections = new();
+            int resolution = 480;
+            List<Section> sections = new List<Section>();
+            List<Note> notes = new();
+            List<Tempo> tempoMap = new();
 
             string sectionName = string.Empty;
-            List<Note> notes = new();
 
             bool readingSection = false;
 
@@ -38,13 +65,13 @@ namespace SustainFixer.Chart
 
             while (!reader.EndOfStream)
             {
-                string line = reader.ReadLine().Trim() ?? string.Empty;
-                if (line.Length <= 0) 
+                string line = reader.ReadLine().Trim() ?? string.Empty; // TODO: check if this trim is needed
+                if (line.Length <= 0)
                     continue;
 
                 if (line[0] == '[' && line[line.Length - 1] == ']')
                 {
-                    sectionName = line.Substring(1, line.Length - 1);
+                    sectionName = line.Substring(1, line.Length - 2);
                 }
                 else if (line == "{")
                 {
@@ -53,7 +80,7 @@ namespace SustainFixer.Chart
                 else if (line == "}")
                 {
                     readingSection = false;
-
+           
                     sections.Add(new Section(sectionName, notes));
 
                     sectionName = string.Empty;
@@ -63,7 +90,14 @@ namespace SustainFixer.Chart
                 {
                     if (readingSection)
                     {
-                        if (line.IsNoteEvent()) notes.Add(line.ToNote());
+                        if (line.IsNoteEvent()) 
+                            notes.Add(line.ToNote());
+                        else if (line.IsTempoEvent()) tempoMap.Add(line.ToTempo());
+                        else if (line.ToLower().Contains("resolution"))
+                        {
+                            string resultString = Regex.Match(line, @"\d+").Value;
+                            resolution = int.Parse(resultString);
+                        }
                     }
                     else if (notes.Count > 0 && sectionName != string.Empty)
                     {
@@ -76,8 +110,8 @@ namespace SustainFixer.Chart
             }
 
             reader.Close();
-
-            return new ChartFile(fullText, sections);
+;
+            return new ChartFile(fullText, resolution, sections, tempoMap);
         }
 
         /// <summary>
@@ -88,23 +122,21 @@ namespace SustainFixer.Chart
         {
             Dictionary<string, Section> sectionMap = SectionMap();
 
-            string newText = fullText;
             string sectionName = string.Empty;
-            StringBuilder sb = new StringBuilder();
-
+            StringBuilder sb = new StringBuilder(string.Empty);
             bool readingSection = false;
 
             StreamReader reader = File.OpenText(path);
 
             while (!reader.EndOfStream)
             {
-                string line = reader.ReadLine().Trim() ?? string.Empty;
+                string line = reader.ReadLine() ?? string.Empty; // TODO: check if this trim is needed
                 if (line.Length <= 0)
                     continue;
 
                 if (line[0] == '[' && line[line.Length - 1] == ']')
                 {
-                    sectionName = line.Substring(1, line.Length - 1);
+                    sectionName = line.Substring(1, line.Length - 2);
                 }
                 else if (line == "{")
                 {
@@ -116,43 +148,57 @@ namespace SustainFixer.Chart
 
                     if (sectionMap.ContainsKey(sectionName))
                     {
-                        newText.Replace(sb.ToString(), sectionMap[sectionName].ToString());
+                        string oldStr = sb.ToString().Remove(sb.ToString().Length - 1, 1);
+                        string newStr = new Section(sectionMap[sectionName].sectionName, sectionMap[sectionName].notes).SectionToString();
+                        newStr = Regex.Replace(newStr, @"[\r\n]*^\s*$[\r\n]*", "", RegexOptions.Multiline);
+                        
+                        fullText = fullText.Replace(oldStr, newStr);
                     }
 
                     sectionName = string.Empty;
-                    sb.Clear();
+                    sb = sb.Clear();
                 }
                 else
                 {
                     if (readingSection)
                     {
-                        sb.AppendLine(line);
+                        sb = sb.AppendLine(line);
                     }
                     else if (sb.Length > 0 && sectionName != string.Empty)
                     {
                         if (sectionMap.ContainsKey(sectionName))
                         {
-                            newText.Replace(sb.ToString(), sectionMap[sectionName].ToString());
+                            string oldStr = sb.ToString().Remove(sb.ToString().Length - 1, 1);
+                            string newStr = new Section(sectionMap[sectionName].sectionName, sectionMap[sectionName].notes).SectionToString();
+                            newStr = Regex.Replace(newStr, @"[\r\n]*^\s*$[\r\n]*", "", RegexOptions.Multiline);
+                            fullText = fullText.Replace(oldStr, newStr);
                         }
 
                         sectionName = string.Empty;
-                        sb.Clear();
+                        sb = sb.Clear();
                     }
                 }
             }
 
             reader.Close();
 
-            File.WriteAllText(path, newText);
+            File.WriteAllText(path, fullText);
         }
 
+        /// <summary>
+        /// Returns a dictionary of section names and section objects.
+        /// </summary>
+        /// <returns></returns>
         private Dictionary<string, Section> SectionMap()
         {
             Dictionary<string, Section> sectionMap = new Dictionary<string, Section>();
 
-            foreach (Section section in sections)
+            for (int i = 0; i < sections.Count; i++)
             {
-                sectionMap.Add(section.sectionName, section);
+                if (sections[i].sectionName.ToLower() != "song" &&
+                    sections[i].sectionName.ToLower() != "synctrack" &&
+                    sections[i].sectionName.ToLower() != "events")
+                        sectionMap.Add(sections[i].sectionName, new Section(sections[i].sectionName, sections[i].notes));
             }
 
             return sectionMap;
