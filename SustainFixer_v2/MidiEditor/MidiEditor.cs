@@ -17,8 +17,6 @@ namespace SustainFixer.Midi
     {
         public static void ProcessMidFile(string path)
         {
-            Console.WriteLine($"Processing {path}...", ConsoleColor.Green);
-
             // cache midi file
             MidiFile midi = MidiFile.Read(path);
             TempoMap tempoMap = midi.GetTempoMap();

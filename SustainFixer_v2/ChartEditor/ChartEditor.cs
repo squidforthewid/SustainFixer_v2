@@ -43,7 +43,7 @@ namespace SustainFixer.Chart
                     section.sectionName.ToLower() != "synctrack" &&
                     section.sectionName.ToLower() != "events")
                 {
-                    int x = section.ProcessNotes(note => note.RoundNoteToNearest(chart.OneNinetySecond));
+                    section.ProcessNotes(note => note.RoundNoteToNearest(chart.OneNinetySecond));
 
                     // cache note positions
                     List<long> notePositions = section.notes.GetNotePositions();

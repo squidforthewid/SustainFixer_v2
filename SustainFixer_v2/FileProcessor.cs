@@ -103,7 +103,7 @@ namespace SustainFixer
         static void ProcessFile(string path, Action<string> methodName)
         {
             filesProcessed++;
-            Console.WriteLine($"\rProcessing file {filesProcessed}/{totalFiles}...", ConsoleColor.White);
+            Console.Write($"\rProcessing file {filesProcessed}/{totalFiles}...", ConsoleColor.White);
 
             methodName(path);
         }
