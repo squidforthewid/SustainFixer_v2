@@ -1,7 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Interaction;
 using SustainFixer.Midi;
 using SustainFixer.Chart;
 using Console = SustainFixer.Debug;
@@ -22,7 +20,24 @@ namespace SustainFixer
 
             FileProcessor.ProcessDirectory(args);
 
-            Console.WriteLine("Done. Press ENTER to exit.", ConsoleColor.Cyan);
+            Console.WriteLine($"\n{FileProcessor.filesProcessed - FileProcessor.badFiles.Count} succeeded, " +
+                $"{FileProcessor.badFiles.Count} failed.",
+                FileProcessor.badFiles.Count == 0 ? ConsoleColor.Green : ConsoleColor.Yellow);
+
+            if (FileProcessor.badFiles.Count != 0)
+            {
+
+                Console.WriteLine("Bad songs:", ConsoleColor.Red);
+
+                foreach (var file in FileProcessor.badFiles)
+                {
+                    Console.WriteLine($"{file.Key} ({file.Value.GetType()})", ConsoleColor.Red);
+                }
+            }
+
+            Console.WriteLine("Done. Press ENTER to exit.", ConsoleColor.Green);
+            Console.WriteLine("Please reach out to Squidicus#3153 on Discord to report bugs and errors.", ConsoleColor.DarkGray);
+
             Console.ReadLine();
         }
     }

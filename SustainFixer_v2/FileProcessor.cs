@@ -1,14 +1,34 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Diagnostics.Metrics;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection.Metadata;
+using System.Security.Cryptography;
 using Console = SustainFixer.Debug;
+using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.MusicTheory;
 
+// TODO: Implement stopwatch
 namespace SustainFixer
 {
     public class FileProcessor
     {
+        public static int filesProcessed = 0;
+        //public static List<string> badFiles = new();
+        public static Dictionary<string, Exception> badFiles = new();
+
         internal static Dictionary<string, Action<string>> fileTypeMap = new Dictionary<string, Action<string>>();
         static int totalFiles = 0;
-        static int filesProcessed = 0;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
         static int CountFilesToProcess(string[] args)
         {
             int i = 0;
@@ -29,6 +49,10 @@ namespace SustainFixer
             return i;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="args"></param>
         public static void ProcessDirectory(string[] args)
         {
             totalFiles = CountFilesToProcess(args);
@@ -38,7 +62,9 @@ namespace SustainFixer
                 if (File.Exists(path))
                 {
                     if (fileTypeMap.ContainsKey(Path.GetExtension(path)))
+                    {
                         ProcessFile(path, fileTypeMap[Path.GetExtension(path)]);
+                    }
                 }
                 else if (Directory.Exists(path))
                 {
@@ -47,6 +73,7 @@ namespace SustainFixer
                 else
                 {
                     Console.WriteLine($"{path} is not a valid file or directory.");
+                    Console.ReadLine();
                 }
             }
         }
@@ -58,16 +85,13 @@ namespace SustainFixer
         /// <param name="fileExtensions">All file extensions to process.</param>
         static void ProcessSubdirectory(string targetDirectory)
         {
-            // Process all files found in directory
-            Console.WriteLine(
-                "SCANNING " + targetDirectory + "...\n",
-                ConsoleColor.White);
-
             string[] fileEntries = Directory.GetFiles(targetDirectory);
             foreach (string path in fileEntries)
             {
                 if (fileTypeMap.ContainsKey(Path.GetExtension(path)))
+                {
                     ProcessFile(path, fileTypeMap[Path.GetExtension(path)]);
+                }
             }
 
             // Recurse into subdirectories of this directory.
@@ -78,6 +102,11 @@ namespace SustainFixer
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="targetDirectory"></param>
+        /// <param name="Act"></param>
         static void CountSubdirectory(string targetDirectory, Action Act)
         {
             string[] fileEntries = Directory.GetFiles(targetDirectory);
@@ -99,13 +128,26 @@ namespace SustainFixer
         /// </summary>
         /// <param name="path">The path of the file being processed.</param>
         /// <param name="fileType">The extension of the file to be processed. File will only be processed if it has this extension.</param>
-        /// <param name="methodName">The method to be executed on the file; string parameter of method should be path of the file.</param>
-        static void ProcessFile(string path, Action<string> methodName)
+        /// <param name="Act">The method to be executed on the file; string parameter of method should be path of the file.</param>
+        static void ProcessFile(string path, Action<string> Act)
         {
             filesProcessed++;
-            Console.Write($"\rProcessing file {filesProcessed}/{totalFiles}...", ConsoleColor.White);
 
-            methodName(path);
+            try
+            {
+                Console.Write($"\rProcessing file {filesProcessed}/{totalFiles}...", ConsoleColor.White);
+
+                Act(path);
+            }
+            catch (Exception e)
+            {
+/*                Console.WriteLine(e.Message);
+                Console.WriteLine(e.GetType().ToString());
+                Console.ReadLine();*/
+
+                badFiles.Add(path, e);
+                return;
+            }
         }
     }
 }

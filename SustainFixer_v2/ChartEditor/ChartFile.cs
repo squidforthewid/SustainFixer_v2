@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using static System.Collections.Specialized.BitVector32;
 using Console = SustainFixer.Debug;
 
 namespace SustainFixer.Chart
@@ -32,8 +31,18 @@ namespace SustainFixer.Chart
 
         string fullText = string.Empty;
 
+        /// <summary>
+        /// 
+        /// </summary>
         public ChartFile() { }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fullText"></param>
+        /// <param name="resolution"></param>
+        /// <param name="sections"></param>
+        /// <param name="tempoMap"></param>
         public ChartFile(string fullText, int resolution, List<Section> sections, List<Tempo> tempoMap)
         {
             this.fullText = fullText;
@@ -59,13 +68,13 @@ namespace SustainFixer.Chart
 
             string sectionName = string.Empty;
 
-            bool readingSection = false;
+            bool withinSection = false;
 
-            StreamReader reader = File.OpenText(path);
+            StreamReader sr = File.OpenText(path);
 
-            while (!reader.EndOfStream)
+            while (!sr.EndOfStream)
             {
-                string line = reader.ReadLine().Trim() ?? string.Empty; // TODO: check if this trim is needed
+                string line = sr.ReadLine().Trim() ?? string.Empty;
                 if (line.Length <= 0)
                     continue;
 
@@ -75,11 +84,11 @@ namespace SustainFixer.Chart
                 }
                 else if (line == "{")
                 {
-                    readingSection = true;
+                    withinSection = true;
                 }
                 else if (line == "}")
                 {
-                    readingSection = false;
+                    withinSection = false;
            
                     sections.Add(new Section(sectionName, notes));
 
@@ -88,11 +97,12 @@ namespace SustainFixer.Chart
                 }
                 else
                 {
-                    if (readingSection)
+                    if (withinSection)
                     {
                         if (line.IsNoteEvent()) 
                             notes.Add(line.ToNote());
-                        else if (line.IsTempoEvent()) tempoMap.Add(line.ToTempo());
+                        else if (line.IsTempoEvent()) 
+                            tempoMap.Add(line.ToTempo());
                         else if (line.ToLower().Contains("resolution"))
                         {
                             string resultString = Regex.Match(line, @"\d+").Value;
@@ -109,7 +119,7 @@ namespace SustainFixer.Chart
                 }
             }
 
-            reader.Close();
+            sr.Close();
 ;
             return new ChartFile(fullText, resolution, sections, tempoMap);
         }
@@ -124,13 +134,13 @@ namespace SustainFixer.Chart
 
             string sectionName = string.Empty;
             StringBuilder sb = new StringBuilder(string.Empty);
-            bool readingSection = false;
+            bool withinSection = false;
 
             StreamReader reader = File.OpenText(path);
 
             while (!reader.EndOfStream)
             {
-                string line = reader.ReadLine() ?? string.Empty; // TODO: check if this trim is needed
+                string line = reader.ReadLine().Trim() ?? string.Empty;
                 if (line.Length <= 0)
                     continue;
 
@@ -140,18 +150,18 @@ namespace SustainFixer.Chart
                 }
                 else if (line == "{")
                 {
-                    readingSection = true;
+                    withinSection = true;
                 }
                 else if (line == "}")
                 {
-                    readingSection = false;
+                    withinSection = false;
 
-                    if (sectionMap.ContainsKey(sectionName))
+                    if (sb.Length != 0 && sectionName != string.Empty && sectionMap.ContainsKey(sectionName))
                     {
                         string oldStr = sb.ToString().Remove(sb.ToString().Length - 1, 1);
                         string newStr = new Section(sectionMap[sectionName].sectionName, sectionMap[sectionName].notes).SectionToString();
                         newStr = Regex.Replace(newStr, @"[\r\n]*^\s*$[\r\n]*", "", RegexOptions.Multiline);
-                        
+
                         fullText = fullText.Replace(oldStr, newStr);
                     }
 
@@ -160,7 +170,7 @@ namespace SustainFixer.Chart
                 }
                 else
                 {
-                    if (readingSection)
+                    if (withinSection)
                     {
                         sb = sb.AppendLine(line);
                     }
@@ -171,6 +181,7 @@ namespace SustainFixer.Chart
                             string oldStr = sb.ToString().Remove(sb.ToString().Length - 1, 1);
                             string newStr = new Section(sectionMap[sectionName].sectionName, sectionMap[sectionName].notes).SectionToString();
                             newStr = Regex.Replace(newStr, @"[\r\n]*^\s*$[\r\n]*", "", RegexOptions.Multiline);
+
                             fullText = fullText.Replace(oldStr, newStr);
                         }
 

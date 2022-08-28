@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Melanchall.DryWetMidi.Core;
+using Console = SustainFixer.Debug;
 using Melanchall.DryWetMidi.Interaction;
 
 namespace SustainFixer.Midi
@@ -78,7 +78,8 @@ namespace SustainFixer.Midi
             this List<long> notePositions,
             long noteEndTime,
             MusicalTimeSpan range,
-            TempoMap tempoMap)
+            TempoMap tempoMap,
+            out long nextNoteTime)
         {
             long r = LengthConverter.ConvertFrom(range, noteEndTime, tempoMap);
 
@@ -86,13 +87,20 @@ namespace SustainFixer.Midi
             {
                 if (Math.Abs(notePosition - noteEndTime) < r)
                 {
+                    nextNoteTime = notePosition;
                     return true;
                 }
             }
 
+            nextNoteTime = noteEndTime; // Placeholder value since if false, this var will never be accessed anyway.
             return false;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="notes"></param>
+        /// <returns></returns>
         public static List<long> GetNotePositions(this List<Note> notes)
         {
             List<long> notePositions = new List<long>();
@@ -105,11 +113,20 @@ namespace SustainFixer.Midi
             return notePositions;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tempoMap"></param>
+        /// <returns></returns>
         public static float? ConsistentBPM(this TempoMap tempoMap)
         {
-            return (tempoMap.GetTempoChanges().Max(x => x.Value.BeatsPerMinute)
-                - tempoMap.GetTempoChanges().Max(x => x.Value.BeatsPerMinute) < 20) ?
-                (float)tempoMap.GetTempoChanges().Average(x => x.Value.BeatsPerMinute) : null;
+            var tempoChanges = tempoMap.GetTempoChanges();
+
+            if (tempoChanges.Count() == 0) return 0;
+
+            return (tempoChanges.Max(x => x.Value.BeatsPerMinute)
+                - tempoChanges.Max(x => x.Value.BeatsPerMinute) < 20) ?
+                (float)tempoChanges.Average(x => x.Value.BeatsPerMinute) : null;
         }
     }
 }

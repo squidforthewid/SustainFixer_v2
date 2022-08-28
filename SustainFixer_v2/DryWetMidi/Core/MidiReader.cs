@@ -328,7 +328,7 @@ namespace Melanchall.DryWetMidi.Core
         public uint Read3ByteDword()
         {
             const int dwordSize = 3;
-
+            
             var bytes = ReadBytes(dwordSize);
             if (bytes.Length < dwordSize)
                 throw new NotEnoughBytesException("Not enough bytes in the stream to read a 3-byte DWORD.", dwordSize, bytes.Length);

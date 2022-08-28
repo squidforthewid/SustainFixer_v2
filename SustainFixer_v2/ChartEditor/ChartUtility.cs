@@ -123,7 +123,6 @@ namespace SustainFixer.Chart
             return sb.ToString();
         }
 
-
         /// <summary>
         /// Returns true if the line passed in is written in the correct note line format.
         /// </summary>
@@ -131,14 +130,21 @@ namespace SustainFixer.Chart
         /// <returns></returns>
         public static bool IsNoteEvent(this string line) //Example note event format: 5000 = N 1 0
         {
-            string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            try
+            {
+                string[] substrings = line.Trim().Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
-            return
-                long.TryParse(substrings[0], out long x) &&
-                substrings[2] == "N" &&
-                short.TryParse(substrings[3], out short y) &&
-                (y == 0 || y == 1 || y == 2 || y == 3 || y == 4 || y == 7) &&
-                long.TryParse(substrings[4], out long z);
+                return
+                    long.TryParse(substrings[0], out long x) &&
+                    substrings[2] == "N" &&
+                    short.TryParse(substrings[3], out short y) &&
+                    (y == 0 || y == 1 || y == 2 || y == 3 || y == 4 || y == 7) &&
+                    long.TryParse(substrings[4], out long z);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -148,12 +154,20 @@ namespace SustainFixer.Chart
         /// <returns></returns>
         public static bool IsTempoEvent(this string line) //Example note event format: 5000 = B 120
         {
-            string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            try
+            {
+                string[] substrings = line.Split(" ").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 
-            return
-                long.TryParse(substrings[0], out long x) &&
-                substrings[2] == "B" &&
-                long.TryParse(substrings[3], out long y);
+                return
+                    long.TryParse(substrings[0], out long x) &&
+                    substrings[2] == "B" &&
+                    long.TryParse(substrings[3], out long y);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return false;
+            }
+
         }
 
         /// <summary>
@@ -163,16 +177,22 @@ namespace SustainFixer.Chart
         /// <param name="noteEndTime"></param>
         /// <param name="range"></param>
         /// <returns></returns>
-        public static bool ContainsElementWithinRange(this List<long> notePositions, long noteEndTime, long range)
+        public static bool ContainsElementWithinRange(
+            this List<long> notePositions, 
+            long noteEndTime, 
+            long range, 
+            out long nextNoteTime)
         {
             foreach (var notePosition in notePositions)
             {
                 if (Math.Abs(notePosition - noteEndTime) < range)
                 {
+                    nextNoteTime = notePosition;
                     return true;
                 }
             }
 
+            nextNoteTime = noteEndTime; // Placeholder value since if false, this var will never be accessed anyway.
             return false;
         }
 
@@ -192,6 +212,12 @@ namespace SustainFixer.Chart
             return notePositions;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tempoMap"></param>
+        /// <param name="time"></param>
+        /// <returns></returns>
         public static Tempo GetTempoAtTime(this List<Tempo> tempoMap, long time)
         {
             return tempoMap.Last(x => x.Time < time);
