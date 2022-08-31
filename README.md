@@ -7,7 +7,7 @@ It is almost universally agreed upon that including sustain gaps in a chart is b
  
 However, some charters (including Neversoft, developers of Guitar Hero) have elected to chaotically neglect this implicit contract between the charter and the laws of nature.
 
-This tool, in an effort to correct this... imperfection... is designed to parse through an entire directory in search of chart files, search for any instances of a sustained note ending where another begins, and shortening the length of the sustain by just enough to create the objectively ideal user experience.
+In an effort to correct this... imperfection... this tool will parse through a full directory in search of chart files, search for any instances of a sustained note ending where another begins, and shortening the length of the sustain by just enough to create the objectively ideal user experience.
  
 Alternatively, this tool can be used by charters themselves who wish to quickly fix their charts, in the event that they couldn't conveniently include sustain gaps when initially charting the song.
 
