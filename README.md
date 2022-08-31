@@ -1,6 +1,6 @@
 # SustainFixer_v2
 
-#Description
+## Description
 A "sustain gap," in common usage, is a short gap between the end of a sustained Clone Hero/Guitar Hero/Rock Band note, and the next note immediately after it's end time.
 
 It is almost universally agreed upon that including sustain gaps in a chart is best practice and provides the best user experience, allowing the player a window to transition from one note or chord to the next without having to prematurely terminate the sustain, even if by a miniscule amount.
@@ -17,7 +17,7 @@ The length of the gap created is 1/32 note for <100BPM, 1/24 note for 100-140BPM
 
 For record-chasers, bear in mind that this WILL slightly reduce the maximum points that can be achieved on songs that initially released without sustain gaps.
  
-#Usage
+## Usage
 Simply drag and drop your song directory (or directories) onto SustainFixer_v2.exe.
 
 The program will search for any file with a .chart or .mid extension in the directory and overwrite it accordingly.
@@ -26,11 +26,11 @@ Vocal charts are ignored.
 
 In addition, any files that return an error will be ignored and listed at the end after all other files are processed.
 
-#Disclaimers
+## Disclaimers
 * Make a backup of songs folder before using.
 * Do not run any .chart or .mid files not intended to be played in Clone Hero through the program.
 * Legacy notation in .chart files (i.e. 0 = E O will not be recognized as an open note) is not currently supported. Make sure your chart adheres to standards set by Moonscraper for best results.
 * Please reach out to Squidicus#3153 on Discord to report bugs and errors.
 
-#Credits
+## Credits
 This software uses [drywetmidi](https://github.com/melanchall/drywetmidi), released under the MIT license.
