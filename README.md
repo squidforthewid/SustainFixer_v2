@@ -1,7 +1,6 @@
 # SustainFixer_v2
 
 ![ScreenShot](/Resources/Images/SustainGapEx.png)
-
 ## Description
 A "sustain gap," in common usage, is a short gap between the end of a sustained Clone Hero/Guitar Hero/Rock Band note, and the next note immediately after it's end time.
 
