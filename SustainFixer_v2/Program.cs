@@ -26,7 +26,6 @@ namespace SustainFixer
 
             if (FileProcessor.badFiles.Count != 0)
             {
-
                 Console.WriteLine("Bad songs:", ConsoleColor.Red);
 
                 foreach (var file in FileProcessor.badFiles)

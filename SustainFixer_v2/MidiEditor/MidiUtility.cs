@@ -8,8 +8,13 @@ using Melanchall.DryWetMidi.Interaction;
 
 namespace SustainFixer.Midi
 {
+    /// <summary>
+    /// Class containing extension functions related to editing MidiFiles.
+    /// </summary>
     public static class MidiUtility
-    { 
+    {
+        #region Note extensions
+
         /// <summary>
         /// Rounds a note to the nearest multiple of the interval.
         /// </summary>
@@ -17,11 +22,13 @@ namespace SustainFixer.Midi
         /// <param name="interval"></param>
         public static void RoundNote(this Note note, int interval)
         {
+            // round time
             if (note.Time % interval != 0)
             {
                 note.Time = (long)Math.Round((float)note.Time / interval) * interval;
             }
 
+            // round length
             if (note.Length % interval != 0)
             {
                 note.Length = (long)Math.Round((float)note.Length / interval) * interval;
@@ -65,6 +72,10 @@ namespace SustainFixer.Midi
             return note.NoteNumber <= (int)diff + 6 && note.NoteNumber >= (int)diff;
         }
 
+        #endregion
+
+        #region List extensions
+
         /// <summary>
         /// Check if any element in a list of integers is within a given range of a given integer.
         /// </summary>
@@ -97,7 +108,7 @@ namespace SustainFixer.Midi
         }
 
         /// <summary>
-        /// 
+        /// Returns a List of the positions of every <see cref="Note"/> in a List.
         /// </summary>
         /// <param name="notes"></param>
         /// <returns></returns>
@@ -113,20 +124,27 @@ namespace SustainFixer.Midi
             return notePositions;
         }
 
+        #endregion
+
+        #region TempoMap extensions
+
         /// <summary>
-        /// 
+        /// Check whether every BPM event in a song is within a given range.
         /// </summary>
         /// <param name="tempoMap"></param>
         /// <returns></returns>
-        public static float? ConsistentBPM(this TempoMap tempoMap)
+        public static float? ConsistentBPM(this TempoMap tempoMap, float range)
         {
             var tempoChanges = tempoMap.GetTempoChanges();
 
+            // default value in the case of a track containing no content
             if (tempoChanges.Count() == 0) return 0;
 
             return (tempoChanges.Max(x => x.Value.BeatsPerMinute)
-                - tempoChanges.Max(x => x.Value.BeatsPerMinute) < 20) ?
+                - tempoChanges.Max(x => x.Value.BeatsPerMinute) < range) ?
                 (float)tempoChanges.Average(x => x.Value.BeatsPerMinute) : null;
         }
+
+        #endregion
     }
 }

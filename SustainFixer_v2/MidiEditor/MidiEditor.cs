@@ -17,56 +17,70 @@ namespace SustainFixer.Midi
         Easy = 60
     }
 
+    /// <summary>
+    /// Class for processing changes in midi files.
+    /// </summary>
     internal class MidiEditor
     {
+        #region Public functions
+
         /// <summary>
-        /// 
+        /// Processes a <see cref="MidiFile"/> found at the given <paramref name="path"/>.
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="path">Path of the file to be processed.</param>
         public static void ProcessMidFile(string path)
         {
-            // cache midi file
+            // set the read settings to bypass irrelevant exceptions
             ReadingSettings settings = new ReadingSettings();
             settings.InvalidChannelEventParameterValuePolicy = InvalidChannelEventParameterValuePolicy.SnapToLimits;
             settings.NotEnoughBytesPolicy = NotEnoughBytesPolicy.Ignore;
             settings.InvalidChunkSizePolicy = InvalidChunkSizePolicy.Ignore; // TODO: currently we are ignoring this rule because it still
-                                                                        // works in Clone Hero, but in the future we should check the end of
-            MidiFile midi = MidiFile.Read(path, settings);              // the chunk for a missing EndOfTrackEvent, as the file cannot be 
-                                                                        // opened by Moonscraper otherwise.
+                                                                            // works in Clone Hero, but in the future we should check the end of
+            // cache midi file                                              // the chunk for a missing EndOfTrackEvent, as the file cannot be 
+            MidiFile midi = MidiFile.Read(path, settings);                  // opened by Moonscraper if it's missing.
+            
+            // cache data from midi file for convenient access
             TempoMap tempoMap = midi.GetTempoMap();
             int ticksPer192ndNote = ((TicksPerQuarterNoteTimeDivision)midi.TimeDivision).ToInt16() / 48;
-
-            float? bpm = tempoMap.ConsistentBPM();
-            
+            float? meanBPM = tempoMap.ConsistentBPM(20);            
             var trackChunks = midi.GetTrackChunks();
 
+            // process all track chunks found in the midifile, except for the first, which is the Events track.
             for (int i = 1; i < trackChunks.Count(); i++)
             {
-                ProcessTrackChunk(trackChunks.ElementAt(i), tempoMap, ticksPer192ndNote, bpm);
+                ProcessTrackChunk(trackChunks.ElementAt(i), tempoMap, ticksPer192ndNote, meanBPM);
             }
 
+            // overwrite the midi file
             midi.Write(path, true);           
         }
+
+        #endregion
+
+        #region Private functions
 
         /// <summary>
         /// Processes a given track of a midi file.
         /// </summary>
         /// <param name="track"></param>
         /// <param name="midi"></param>
-        static void ProcessTrackChunk(TrackChunk track, TempoMap tempoMap, int ticksPer192ndNote, float? bpm)
+        static void ProcessTrackChunk(TrackChunk track, TempoMap tempoMap, int ticksPer192ndNote, float? meanBPM)
         {
+            // cache the track name - if this fails, it will be caught in the FileProcessor and be reported as a bad file.
             string trackName = ((SequenceTrackNameEvent)track.GetTimedEvents().First(x => 
                 x.Event is SequenceTrackNameEvent).Event).Text;
 
+            // process the track, unless it is the vocal track (which does not contain sustains in need of fixing)
             if (trackName.ToLower() != "part vocals")
             {
-                // round every note to nearest 1/192 note
+                // round every note in the track to nearest 1/192 note
                 track.ProcessNotes(note => note.RoundNote(ticksPer192ndNote));
 
-                ProcessTrackDifficulty(track, tempoMap, Difficulty.Expert, bpm);
-                ProcessTrackDifficulty(track, tempoMap, Difficulty.Hard, bpm);
-                ProcessTrackDifficulty(track, tempoMap, Difficulty.Medium, bpm);
-                ProcessTrackDifficulty(track, tempoMap, Difficulty.Easy, bpm);
+                // as all difficulties for an instrument are charted on a single track, we need to process each difficulty independently.
+                ProcessTrackDifficulty(track, tempoMap, Difficulty.Expert, meanBPM);
+                ProcessTrackDifficulty(track, tempoMap, Difficulty.Hard, meanBPM);
+                ProcessTrackDifficulty(track, tempoMap, Difficulty.Medium, meanBPM);
+                ProcessTrackDifficulty(track, tempoMap, Difficulty.Easy, meanBPM);
             }
         }
 
@@ -76,7 +90,7 @@ namespace SustainFixer.Midi
         /// <param name="track"></param>
         /// <param name="midi"></param>
         /// <param name="difficulty"></param>
-        static void ProcessTrackDifficulty(TrackChunk track, TempoMap tempoMap, Difficulty difficulty, float? bpm)
+        static void ProcessTrackDifficulty(TrackChunk track, TempoMap tempoMap, Difficulty difficulty, float? meanBPM)
         {
             // cache note positions
             List<long> notePositions = track.GetNotes().Where(note => 
@@ -85,33 +99,40 @@ namespace SustainFixer.Midi
             // shorten note based on BPM
             track.ProcessNotes(note =>
             {
-            if (note.Length > 1
-            && note.IsOnDifficultyChart(difficulty)
-            && notePositions.ContainsElementWithinRange(note.EndTime, MusicalTimeSpan.OneTwentyEighth, tempoMap, 
-                                                        out long nextNoteTime))
-            {
-                MusicalTimeSpan shortenAmt;
-
-                // TODO: check for performance hit using this method
-                if (bpm != null)
+                if (note.Length > 1 // note is sustained
+                && note.IsOnDifficultyChart(difficulty) // isolate the notes from the given difficulty
+                && notePositions.ContainsElementWithinRange(note.EndTime, MusicalTimeSpan.OneTwentyEighth, tempoMap, // only shorten a note
+                                                        out long nextNoteTime)) // if it ends within 1/128 note of when another begins
                 {
-                    shortenAmt = (bpm >= 140) ? MusicalTimeSpan.Sixteenth :
-                        (bpm >= 100) ? MusicalTimeSpan.TwentyFourth :
-                        MusicalTimeSpan.ThirtySecond;
-                }
-                else
-                {
-                    Tempo tempo = tempoMap.GetTempoAtTime(note.TimeAs<ITimeSpan>(tempoMap));
-                    shortenAmt = (tempo.BeatsPerMinute >= 140) ? MusicalTimeSpan.Sixteenth :
-                        (tempo.BeatsPerMinute >= 100) ? MusicalTimeSpan.TwentyFourth :
-                        MusicalTimeSpan.ThirtySecond;
-                }
+                    MusicalTimeSpan shortenAmt;
+                    double bpm;
 
-                if (nextNoteTime != note.EndTime) note.Length = nextNoteTime - note.Time;
+                    // (meanBPM is null here if the song's bpm is inconsistent)
+                    if (meanBPM != null)
+                    {
+                        // As the BPM is consistent, we can simply use the average BPM to calulate the ideal shorten amount.
+                        bpm = (float)meanBPM;
+                    }
+                    else
+                    {
+                        // As the BPM is inconsistent, we need to get the BPM at the time of the note.
+                        Tempo tempo = tempoMap.GetTempoAtTime(note.TimeAs<ITimeSpan>(tempoMap));
+                        bpm = tempo.BeatsPerMinute;
+                    }
 
-                note.ShortenNote(shortenAmt, tempoMap);
-            }
+                    // The faster the BPM, the more we shorten the note by. 
+                    shortenAmt = (meanBPM >= 140) ? MusicalTimeSpan.Sixteenth :
+                        (meanBPM >= 100) ? MusicalTimeSpan.TwentyFourth :
+                        MusicalTimeSpan.ThirtySecond;
+
+                    // round the end time of the sustain exactly to the time of the note it's close to
+                    if (nextNoteTime != note.EndTime) note.Length = nextNoteTime - note.Time;
+
+                    note.ShortenNote(shortenAmt, tempoMap);
+                }
             });
         }
+
+        #endregion
     }
 }

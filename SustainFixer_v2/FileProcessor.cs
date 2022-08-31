@@ -15,42 +15,20 @@ using Melanchall.DryWetMidi.MusicTheory;
 // TODO: Implement stopwatch
 namespace SustainFixer
 {
+    /// <summary>
+    /// Recursive file/directory processor.
+    /// </summary>
     public class FileProcessor
     {
         public static int filesProcessed = 0;
-        //public static List<string> badFiles = new();
         public static Dictionary<string, Exception> badFiles = new();
 
+        // Dictionary for storing instructions on how to handle files based on their extension.
         internal static Dictionary<string, Action<string>> fileTypeMap = new Dictionary<string, Action<string>>();
         static int totalFiles = 0;
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        static int CountFilesToProcess(string[] args)
-        {
-            int i = 0;
-
-            foreach (string path in args)
-            {
-                if (File.Exists(path))
-                {
-                    if (fileTypeMap.ContainsKey(Path.GetExtension(path)))
-                        i++;
-                }
-                else if (Directory.Exists(path))
-                {
-                    CountSubdirectory(path, () => i++);
-                }
-            }
-
-            return i;
-        }
-
-        /// <summary>
-        /// 
+        /// Process a given directory.
         /// </summary>
         /// <param name="args"></param>
         public static void ProcessDirectory(string[] args)
@@ -103,6 +81,31 @@ namespace SustainFixer
         }
 
         /// <summary>
+        /// Returns a count of all files that will be processed in the given directories.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        static int CountFilesToProcess(string[] args)
+        {
+            int i = 0;
+
+            foreach (string path in args)
+            {
+                if (File.Exists(path))
+                {
+                    if (fileTypeMap.ContainsKey(Path.GetExtension(path)))
+                        i++;
+                }
+                else if (Directory.Exists(path))
+                {
+                    CountSubdirectory(path, () => i++);
+                }
+            }
+
+            return i;
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="targetDirectory"></param>
@@ -139,7 +142,7 @@ namespace SustainFixer
 
                 Act(path);
             }
-            catch (Exception e)
+            catch (NullReferenceException e)
             {
 /*                Console.WriteLine(e.Message);
                 Console.WriteLine(e.GetType().ToString());
