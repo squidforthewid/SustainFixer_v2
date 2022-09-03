@@ -3,14 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics.Metrics;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection.Metadata;
-using System.Security.Cryptography;
 using Console = SustainFixer.Debug;
-using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.MusicTheory;
 
 // TODO: Implement stopwatch
 namespace SustainFixer

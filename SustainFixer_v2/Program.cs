@@ -18,6 +18,8 @@ namespace SustainFixer
                 { ".chart",     path => ChartEditor.ProcessChartFile(path) }
             };
 
+            Console.WriteLine("Thank you for using SustainFixer_v2.\n\n", ConsoleColor.White);
+
             FileProcessor.ProcessDirectory(args);
 
             Console.WriteLine($"\n{FileProcessor.filesProcessed - FileProcessor.badFiles.Count} succeeded, " +
