@@ -135,12 +135,8 @@ namespace SustainFixer
 
                 Act(path);
             }
-            catch (NullReferenceException e)
+            catch (Exception e)
             {
-/*                Console.WriteLine(e.Message);
-                Console.WriteLine(e.GetType().ToString());
-                Console.ReadLine();*/
-
                 badFiles.Add(path, e);
                 return;
             }
