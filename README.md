@@ -8,7 +8,7 @@ It is almost universally agreed upon that including sustain gaps in a chart is b
  
 However, some charters (including Neversoft, developers of Guitar Hero) have elected to chaotically neglect this implicit contract between the charter and the laws of nature.
 
-In an effort to correct this... imperfection... this tool will parse through a full directory in search of chart files, search for any instances of a sustained note ending where another begins, and shortening the length of the sustain by just enough to create the objectively ideal user experience.
+In an effort to correct this, this tool will parse through a given directory in search of .chart/.mid files, search for any instances of a sustained note ending where another begins, and shortening the length of the sustain by just enough to create the objectively ideal user experience.
  
 Alternatively, this tool can be used by charters themselves who wish to quickly fix their charts, in the event that they couldn't conveniently include sustain gaps when initially charting the song.
 
@@ -17,9 +17,9 @@ For record-chasers, bear in mind that this WILL slightly reduce the maximum poin
 ## Usage
 Simply drag and drop your song directory (or directories) onto SustainFixer_v2.exe. The program will search for any file with a .chart or .mid extension in the directory and overwrite it accordingly.
 
-A lack of a sustain gap is defined as the end of a note being within 1/128 note of the beginning of another note in the chart. Any further than that, and it's considered intentional and mindful placement by the charter.
+A sustain gap is considered to be missing when the end of a note is within 1/128 of the beginning of another note in the chart. Any further than that, and it's considered intentional and mindful placement by the charter.
 
-The length of the gap created is 1/32 note for <100BPM, 1/24 note for 100-140BPM, and 1/16 note for >140BPM, as is recommended in [CustomSongsCentral's Monthly Pack Submission Guidelines.](https://customsongscentral.com/monthly-pack-submission-guidelines/)
+The length of the gap created is 1/32 for <100BPM, 1/24 for 100-140BPM, and 1/16 for >140BPM, as is recommended in [CustomSongsCentral's Monthly Pack Submission Guidelines.](https://customsongscentral.com/monthly-pack-submission-guidelines/)
 
 Vocal charts are ignored.
 
