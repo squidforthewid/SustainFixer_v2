@@ -45,8 +45,7 @@ namespace SustainFixer.Chart
                 // shorten note based on BPM
                 section.ProcessNotes(note =>
                 {
-                    if (note.Length > 1
-                    && notePositions.ContainsElementWithinRange(note.EndTime, chart.OneTwentyEighth, out long nextNoteTime))
+                    if (note.Length > 1)
                     {
                         long shortenAmt;
 
@@ -65,9 +64,12 @@ namespace SustainFixer.Chart
                                 chart.ThirtySecond;
                         }
 
-                        if (nextNoteTime != note.EndTime) note.Length = nextNoteTime - note.Time;
-
-                        note.ShortenNote(shortenAmt);
+                        if (notePositions.ContainsElementWithinRange(note.EndTime, shortenAmt, out long nextNoteTime))
+                        {
+                            if (nextNoteTime != note.EndTime) note.Length = nextNoteTime - note.Time;
+                                
+                            note.ShortenNote(shortenAmt);
+                        }
                     }
                 });
             }         

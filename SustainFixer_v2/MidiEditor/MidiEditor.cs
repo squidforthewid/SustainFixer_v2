@@ -99,15 +99,12 @@ namespace SustainFixer.Midi
             // shorten note based on BPM
             track.ProcessNotes(note =>
             {
-                if (note.Length > 1 // note is sustained
-                && note.IsOnDifficultyChart(difficulty) // isolate the notes from the given difficulty
-                && notePositions.ContainsElementWithinRange(note.EndTime, MusicalTimeSpan.OneTwentyEighth, tempoMap, // only shorten a note
-                                                        out long nextNoteTime)) // if it ends within 1/128 note of when another begins
+                if (note.Length > 1 // if note is sustained
+                && note.IsOnDifficultyChart(difficulty)) // isolate the notes from the given difficulty
                 {
                     MusicalTimeSpan shortenAmt;
                     double bpm;
 
-                    // (meanBPM is null here if the song's bpm is inconsistent)
                     if (meanBPM != null)
                     {
                         // As the BPM is consistent, we can simply use the average BPM to calulate the ideal shorten amount.
@@ -125,10 +122,14 @@ namespace SustainFixer.Midi
                         (meanBPM >= 100) ? MusicalTimeSpan.TwentyFourth :
                         MusicalTimeSpan.ThirtySecond;
 
-                    // round the end time of the sustain exactly to the time of the note it's close to
-                    if (nextNoteTime != note.EndTime) note.Length = nextNoteTime - note.Time;
+                    // Only shorten a note if it ends within the shortenAmt of when another note begins
+                    if (notePositions.ContainsElementWithinRange(note.EndTime, shortenAmt, tempoMap, out long nextNoteTime))
+                    {
+                        // round the end time of the sustain exactly to the time of the note it's close to
+                        if (nextNoteTime != note.EndTime) note.Length = nextNoteTime - note.Time;
 
-                    note.ShortenNote(shortenAmt, tempoMap);
+                        note.ShortenNote(shortenAmt, tempoMap);
+                    }
                 }
             });
         }

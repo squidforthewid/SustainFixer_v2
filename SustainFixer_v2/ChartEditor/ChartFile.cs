@@ -188,7 +188,12 @@ namespace SustainFixer.Chart
                 {
                     if (readingSection) // note line
                     {
-                        sb = sb.AppendLine(line);
+                        // leading double-whitespace so that when fullText.Replace is called at the end of a section (if line == "}")
+                        // the old string matches the original fullText - since the sb trims each line to see what non-whitespace
+                        // character it starts with. Not the cleanest solution, but it works for now.
+
+                        //TODO: make this not shit 
+                        sb = sb.AppendLine($"  {line}");
                     }
                 }
             }
